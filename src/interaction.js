@@ -104,6 +104,7 @@ export const mainInteraction = () => {
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderConfig({ type: 'js' });
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    dracoLoader.preload();
     gltfLoader.setDRACOLoader(dracoLoader);
 
     // 메인 로고 넣기
