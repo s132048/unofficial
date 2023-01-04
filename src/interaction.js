@@ -20,6 +20,7 @@ import logo1 from './logo1.glb';
 import logo2 from './logo2.glb';
 import logo3 from './logo4.glb';
 import logo6 from './logo6.glb';
+import logo7 from './logo7.glb';
 import work from './work.glb';
 
 import tvstudio from './tvstudio.hdr';
@@ -124,7 +125,7 @@ export const mainInteraction = () => {
         // mass 최적인가?
         {menuName: 'logo1', asset: logo6, mass: 1, scale: isMobile ? 8 : 7, positionX: isMobile ? 0.1 : -1.4, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.9},
         {menuName: 'logo2', asset: logo6, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 1.6, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.3},
-        {menuName: 'logo3', asset: logo6, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 0.1, positionY: -0.8, positionZ: isMobile ? -0.8 : 0.8},
+        {menuName: 'logo3', asset: logo7, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 0.1, positionY: -0.8, positionZ: isMobile ? -0.8 : 0.8},
         {menuName: 'work', asset: work, mass: 10, scale: isMobile ? 8 : 28, positionX: isMobile ? 0.1 : 0.3, positionY: 0.4, positionZ: isMobile ? -0.8 : -0.6},
         {menuName: 'about', asset: about, mass: 1, scale: isMobile ? 6 : 16, positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? 0.75 : 0.6},
         {menuName: 'contact', asset: contact, mass: 1, scale: isMobile ? 5 : 12, positionX: isMobile ? -0 : 1.5, positionY: 0, positionZ: isMobile ? 0 : 0.8},
