@@ -3,6 +3,7 @@ import { isMobile } from "react-device-detect";
 import * as THREE from 'three';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
 import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
@@ -17,8 +18,11 @@ import eye from './eye.glb';
 import logo from './logo.glb';
 import logo1 from './logo1.glb';
 import logo2 from './logo2.glb';
-import logo3 from './logo3.glb';
+import logo3 from './logo4.glb';
+import logo6 from './logo6.glb';
 import work from './work.glb';
+
+import tvstudio from './tvstudio.hdr';
 
 export const mainInteraction = () => {
     const canvas = document.querySelector('#three-canvas');
@@ -26,35 +30,55 @@ export const mainInteraction = () => {
     const renderer = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
+    renderer.shadowMap.enabled = true;
+
+    // gui
+    const gui = new dat.GUI();
+    let parameters = {
+        decay: isMobile ? 0.84 : 0.6,
+        angularDecay: isMobile ? 0.6 : 0.8,
+        force: isMobile ? 2000 : 400,
+        torque: 10,
+
+        // 조명
+        ambientLight: 0.5,
+        environmentLight: 1,
+    }
+    gui.add(parameters, 'decay').min(0).max(1).step(0.01);
+    gui.add(parameters, 'angularDecay').min(0).max(1).step(0.01);
+    gui.add(parameters, 'force').min(0).max(10000).step(1);
+    gui.add(parameters, 'torque').min(0).max(100).step(1);
+
+    gui.add(parameters, 'ambientLight').min(0).max(10).step(0.01);
+    gui.add(parameters, 'environmentLight').min(0).max(10).step(0.01);
 
     // init
     const scene = new THREE.Scene();
 
     // 카메라
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // const camera = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2);
     camera.position.y = isMobile ? 2 : 3;
     scene.add(camera);
 
     // 조명
-    const ambientLight = new THREE.AmbientLight('white', 1);
+    const ambientLight = new THREE.AmbientLight('white', parameters.ambientLight);
+    // ambientLight.castShadow = true;
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight('white', 1);
-    directionalLight.position.y = 1000;
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
+
+    // 배경
+    new RGBELoader().load(tvstudio, (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = texture;
+    });
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = parameters.environmentLight;
 
     // 컨트롤
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    // gui
-    const gui = new dat.GUI();
-    let parameters = {
-        decay: 0.8,
-        force: isMobile ? 10 : 80
-    }
-    gui.add(parameters, 'decay').min(0).max(1).step(0.01);
-    gui.add(parameters, 'force').min(0).max(10000).step(1);
-
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
 
     // 물리엔진
     const cannonWorld = new CANNON.World();
@@ -91,22 +115,25 @@ export const mainInteraction = () => {
     });
 
     const sequence = [
-        {menuName: 'eye', asset: eye, scale: 8, floating: true, mass: 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye2', asset: eye, scale: 16, floating: true, mass: 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye3', asset: eye, scale: 40, floating: true, mass: 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'floating1', asset: logo1, scale: isMobile ? 2 : 4, floating: true, mass: isMobile ? 1000: 40, forces: [new CANNON.Vec3(2,2,-3).scale(200)]},
-        {menuName: 'floating2', asset: logo2, scale: isMobile ? 6 : 10, floating: true, mass: isMobile ? 1000: 40, forces: [new CANNON.Vec3(-3,4,3).scale(160)]},
-        {menuName: 'floating3', asset: logo3, scale: isMobile ? 2 : 4, floating: true, mass: isMobile ? 1000: 40, forces: [new CANNON.Vec3(-4,-2,-3).scale(150)]},
+        {menuName: 'eye', asset: eye, scale: 8, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
+        {menuName: 'eye2', asset: eye, scale: isMobile ? 12 : 16, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
+        {menuName: 'eye3', asset: eye, scale: isMobile ? 16 : 40, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
+        // {menuName: 'floating1', asset: logo1, scale: isMobile ? 1.5 : 4, floating: true, mass: isMobile ? 200: 40, forces: [new CANNON.Vec3(2,2,-3).scale(200)]},
+        // {menuName: 'floating2', asset: logo2, scale: isMobile ? 4 : 10, floating: true, mass: isMobile ? 200: 40, forces: [new CANNON.Vec3(-3,4,3).scale(160)]},
+        // {menuName: 'floating3', asset: logo3, scale: isMobile ? 1.5 : 4, floating: true, mass: isMobile ? 200: 40, forces: [new CANNON.Vec3(-4,-2,-3).scale(150)]},
         // mass 최적인가?
-        {menuName: 'work', asset: work, mass: 1, scale: isMobile ? 8 : 22, positionX: isMobile ? 0.2 : 0.3, positionZ: isMobile ? -0.8 : -0.8},
-        {menuName: 'about', asset: about, mass: 1, scale: isMobile ? 8 : 12, positionX: isMobile ? 0 : -1.8, positionZ: isMobile ? 0.8 : 0.6},
-        {menuName: 'contact', asset: contact, mass: 1, scale: isMobile ? 7 : 11, positionX: isMobile ? -0 : 1.5, positionZ: isMobile ? 0 : 0.8},
+        {menuName: 'logo1', asset: logo6, mass: 1, scale: isMobile ? 8 : 7, positionX: isMobile ? 0.1 : -1.4, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.9},
+        {menuName: 'logo2', asset: logo6, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 1.6, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.3},
+        {menuName: 'logo3', asset: logo6, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 0.1, positionY: -0.8, positionZ: isMobile ? -0.8 : 0.8},
+        {menuName: 'work', asset: work, mass: 10, scale: isMobile ? 8 : 28, positionX: isMobile ? 0.1 : 0.3, positionY: 0.4, positionZ: isMobile ? -0.8 : -0.6},
+        {menuName: 'about', asset: about, mass: 1, scale: isMobile ? 6 : 16, positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? 0.75 : 0.6},
+        {menuName: 'contact', asset: contact, mass: 1, scale: isMobile ? 5 : 12, positionX: isMobile ? -0 : 1.5, positionY: 0, positionZ: isMobile ? 0 : 0.8},
     ];
 
     const clock = new THREE.Clock();
 
     const planeShape = new CANNON.Plane();
-    const yCap = isMobile ? 0.2 : 0.8;
+    const yCap = isMobile ? 0.2 : 1;
     var planeYmin = new CANNON.Body({mass: 0, material: defaultContactMaterial});
     planeYmin.addShape(planeShape);
     planeYmin.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
@@ -118,34 +145,41 @@ export const mainInteraction = () => {
     planeYmax.position.set(0,yCap,0);
     cannonWorld.addBody(planeYmax);
 
+    let boundingBox = new THREE.Box3();
+    let positionTemp = new THREE.Vector3();
+    const cap = 1;
     const updatePhysics = (scene, objects) => {
-        // TODO: 실린더로 바꾸기 / 모바일 값 정하기
-        const xCap = isMobile ? 0.15 : 2.2;
-        const rCap = 0.4;
-        const zCap = 1.4;
         const decay = parameters.decay;
+        const angularDecay = parameters.angularDecay;
         for (const [name, object] of Object.entries(objects)) {
-            const {body, mesh} = object;
+            const {body, mesh, floating, force} = object;
             if (!mesh || !body) {
                 continue;
             }
             mesh.position.copy(body.position);
             mesh.quaternion.copy(body.quaternion);
 
-            let {x, y, z} = mesh.position;
-            if (x + object.offset.x > xCap - y) {
-                body.velocity.x = -Math.abs(body.velocity.x);
-                if (object.force) object.force.x = -Math.abs(object.force.x);
-            } else if (x - object.offset.x < -xCap + y) {
-                body.velocity.x = Math.abs(body.velocity.x);
-                if (object.force) object.force.x = Math.abs(object.force.x);
-            }
-            if (z + object.offset.z > zCap - y * 0.9) {
-                body.velocity.z = -Math.abs(body.velocity.z);
-                if (object.force) object.force.z = -Math.abs(object.force.z);
-            } else if (z - object.offset.z < -zCap + y * 0.9) {
-                body.velocity.z = Math.abs(body.velocity.z);
-                if (object.force) object.force.z = Math.abs(object.force.z);
+            if (floating) {
+                boundingBox.setFromObject(mesh, true);
+                positionTemp.subVectors(boundingBox.max, boundingBox.min);
+                positionTemp.multiplyScalar(0.5);
+                positionTemp.add(boundingBox.min);
+                positionTemp.project(camera);
+
+                if (positionTemp.x >= cap) {
+                    object.body.velocity.x = -Math.abs(object.body.velocity.x);
+                    if (force) object.force.x = -Math.abs(object.force.x);
+                } else if (positionTemp.x <= -cap) {
+                    object.body.velocity.x = Math.abs(object.body.velocity.x);
+                    if (force) object.force.x = Math.abs(object.force.x);
+                }
+                if (positionTemp.y >= cap) {
+                    object.body.velocity.z = Math.abs(object.body.velocity.z);
+                    if (force) object.force.z = Math.abs(object.force.z);
+                } else if (positionTemp.y <= -cap) {
+                    object.body.velocity.z = -Math.abs(object.body.velocity.z);
+                    if (force) object.force.z = -Math.abs(object.force.z);
+                }
             }
 
             // floating일 때 스프링 붙이는 거 생략함
@@ -153,27 +187,27 @@ export const mainInteraction = () => {
             if (object.body) {
                 const randomTime = Math.random();
                 if (object.floating && randomTime > 0.8 && clock.elapsedTime >= object.forceExpire) {
-                    const currentTime = clock.elapsedTime + 10;
-                    object.forceExpire = currentTime + 10;
+                    const currentTime = clock.elapsedTime + 3;
+                    object.forceExpire = currentTime + 3;
                     object.force = new CANNON.Vec3(body.position.x, -body.position.y, body.position.z);
+                    object.force.normalize();
                     // object.torque = new CANNON.Vec3(body.position.x, body.position.y, body.position.z);
                 }
                 if (object.forceExpire && clock.elapsedTime <= object.forceExpire) {
                     let force = object.force;
-                    force.normalize();
-                    force = force.scale(800);
+                    force = force.scale(parameters.force);
                     body.applyForce(force, new CANNON.Vec3(0, 0, 0));
                     let torque = body.angularVelocity;
                     torque.normalize();
-                    torque = torque.scale(20);
+                    torque = torque.scale(parameters.torque);
                     body.applyTorque(torque);
                 }
                 body.velocity.x *= decay;
                 body.velocity.y *= decay;
                 body.velocity.z *= decay;
-                body.angularVelocity.x *= decay;
-                body.angularVelocity.y *= decay;
-                body.angularVelocity.z *= decay;
+                body.angularVelocity.x *= angularDecay;
+                body.angularVelocity.y *= angularDecay;
+                body.angularVelocity.z *= angularDecay;
             }
             if (object.forces && object.forces.length > 0) {
                 const force = object.forces.pop();
@@ -186,12 +220,12 @@ export const mainInteraction = () => {
             //     object.body.applyImpulse(impulse);
             // }
 
-            if (['work', 'about', 'contact'].includes(name) && !object.constraint) {
+            if (['work', 'about', 'contact', 'logo1', 'logo2', 'logo3'].includes(name) && !object.constraint) {
                 object.constraint = new CANNON.PointToPointConstraint(
                     body,
                     new CANNON.Vec3(0, 0, 0),
                     objects.center.body,
-                    new CANNON.Vec3(object.positionX, 0, object.positionZ)
+                    new CANNON.Vec3(object.positionX, object.positionY, object.positionZ)
                 );
                 cannonWorld.addConstraint(object.constraint);
             }
@@ -209,24 +243,25 @@ export const mainInteraction = () => {
                 material: defaultMaterial
             });
             body.addShape(shape, offset, quaternion);
-            if (toLoad.menuName === 'eye') body.quaternion.set(Math.PI, 0, 0, 0);
             cannonWorld.addBody(body);
 
             objects[toLoad.menuName] = {};
             objects[toLoad.menuName].mesh = gltf.scene.children[0];
+            objects[toLoad.menuName].mesh.castShadow = true;
+            objects[toLoad.menuName].mesh.receiveShadow = true;
             scene.add(gltf.scene.children[0]);
             objects[toLoad.menuName].body = body;
             objects[toLoad.menuName].offset = offset;
             objects[toLoad.menuName].forceExpire = 0;
 
             if (toLoad.positionX) objects[toLoad.menuName].positionX = toLoad.positionX;
+            if (toLoad.positionX) objects[toLoad.menuName].positionY = toLoad.positionY;
             if (toLoad.positionZ) objects[toLoad.menuName].positionZ = toLoad.positionZ;
             if (toLoad.floating) objects[toLoad.menuName].floating = toLoad.floating;
             if (toLoad.forces) objects[toLoad.menuName].forces = toLoad.forces;
         });
     };
 
-    let prevTime = clock.elapsedTime;
     let clicked = false;
 
     const draw = () => {
@@ -236,11 +271,10 @@ export const mainInteraction = () => {
         cannonWorld.step(cannonStepTime, delta, 3);
 
         updatePhysics(scene, objects);
-        // 시퀀스 속도 정해보기
-        // if (sequence.length > 0 && clock.elapsedTime - prevTime > 0.1) {
-        prevTime = clock.elapsedTime;
         clicked && sequence.length > 0 && loadSequence(sequence);
-        // }
+
+        ambientLight.intensity = parameters.ambientLight;
+        renderer.toneMappingExposure = parameters.environmentLight;
 
         cannonDebugger.update();
         renderer.render(scene, camera);
