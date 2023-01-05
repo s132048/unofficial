@@ -124,6 +124,29 @@ export const mainInteraction = () => {
         objects.center.offset = new CANNON.Vec3(0, 0,0);
     });
 
+    let heavyLogos = [];
+    for (let i = 0; i < 3; i++) {
+        gltfLoader.load(logo8, gltf => {
+            // 로고 사이즈 정하기
+            heavyLogos.push(gltf.scene.children[0]);
+            if (i === 2) {
+                alert('done');
+            }
+            // const logoScale = isMobile ? 24 : 32;
+            // gltf.scene.children[0].scale.set(logoScale, logoScale, logoScale);
+            // const sphereBody = new CANNON.Sphere(0.001);
+            // const body = new CANNON.Body({mass: 0, position: new CANNON.Vec3(0, 0,0 ), material: defaultMaterial});
+            // body.addShape(sphereBody);
+            // cannonWorld.addBody(body);
+            //
+            // objects.center = {};
+            // objects.center.mesh = gltf.scene.children[0];
+            // scene.add(gltf.scene.children[0]);
+            // objects.center.body = body;
+            // objects.center.offset = new CANNON.Vec3(0, 0,0);
+        });
+    }
+
     const sequence = [
         // {menuName: 'eye', asset: eye, scale: 8, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
         // {menuName: 'eye2', asset: eye, scale: isMobile ? 12 : 16, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
@@ -132,9 +155,9 @@ export const mainInteraction = () => {
         // {menuName: 'floating2', asset: logo2, scale: isMobile ? 4 : 10, floating: true, mass: isMobile ? 200: 40, forces: [new CANNON.Vec3(-3,4,3).scale(160)]},
         // {menuName: 'floating3', asset: logo3, scale: isMobile ? 1.5 : 4, floating: true, mass: isMobile ? 200: 40, forces: [new CANNON.Vec3(-4,-2,-3).scale(150)]},
         // mass 최적인가?
-        {menuName: 'logo1', asset: logo6, mass: 1, scale: isMobile ? 8 : 7, positionX: isMobile ? 0.1 : -1.4, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.9},
-        {menuName: 'logo2', asset: logo6, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 1.6, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.3},
-        {menuName: 'logo3', asset: logo8, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 0.1, positionY: -0.8, positionZ: isMobile ? -0.8 : 0.8},
+        {menuName: 'logo1', heavy: true, mass: 1, scale: isMobile ? 8 : 7, positionX: isMobile ? 0.1 : -1.4, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.9},
+        {menuName: 'logo2', heavy: true, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 1.6, positionY: -0.6, positionZ: isMobile ? -0.8 : -0.3},
+        {menuName: 'logo3', heavy: true, mass: 1, scale: isMobile ? 8 : 6, positionX: isMobile ? 0.1 : 0.1, positionY: -0.8, positionZ: isMobile ? -0.8 : 0.8},
         {menuName: 'work', asset: work, mass: 10, scale: isMobile ? 8 : 28, positionX: isMobile ? 0.1 : 0.3, positionY: 0.4, positionZ: isMobile ? -0.8 : -0.6},
         {menuName: 'about', asset: about, mass: 1, scale: isMobile ? 6 : 16, positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? 0.75 : 0.8},
         {menuName: 'contact', asset: contact, mass: 1, scale: isMobile ? 5 : 12, positionX: isMobile ? -0 : 1.5, positionY: 0, positionZ: isMobile ? 0 : 1},
@@ -242,8 +265,41 @@ export const mainInteraction = () => {
         }
     };
 
+    let tempModel;
     const loadSequence = (sequence) => {
         const toLoad = sequence.pop();
+        if (toLoad.heavy) {
+            if (heavyLogos.length === 0) {
+                sequence.push(toLoad);
+            } else {
+                tempModel = heavyLogos.pop();
+                tempModel.scale.set(toLoad.scale, toLoad.scale, toLoad.scale);
+                const { shape, offset, quaternion } = threeToCannon(tempModel, {type: ShapeType.BOX});
+                const body = new CANNON.Body({
+                    mass: toLoad.mass,
+                    position: new CANNON.Vec3(-offset.x, -offset.y, -offset.z),
+                    material: defaultMaterial
+                });
+                body.addShape(shape, offset, quaternion);
+                cannonWorld.addBody(body);
+
+                objects[toLoad.menuName] = {};
+                objects[toLoad.menuName].mesh = tempModel;
+                objects[toLoad.menuName].mesh.castShadow = true;
+                objects[toLoad.menuName].mesh.receiveShadow = true;
+                scene.add(tempModel);
+                objects[toLoad.menuName].body = body;
+                objects[toLoad.menuName].offset = offset;
+                objects[toLoad.menuName].forceExpire = 0;
+
+                if (toLoad.positionX) objects[toLoad.menuName].positionX = toLoad.positionX;
+                if (toLoad.positionX) objects[toLoad.menuName].positionY = toLoad.positionY;
+                if (toLoad.positionZ) objects[toLoad.menuName].positionZ = toLoad.positionZ;
+                if (toLoad.floating) objects[toLoad.menuName].floating = toLoad.floating;
+                if (toLoad.forces) objects[toLoad.menuName].forces = toLoad.forces;
+            }
+            return;
+        }
         gltfLoader.load(toLoad.asset, gltf => {
             gltf.scene.children[0].scale.set(toLoad.scale, toLoad.scale, toLoad.scale);
             const { shape, offset, quaternion } = threeToCannon(gltf.scene.children[0], {type: ShapeType.BOX});

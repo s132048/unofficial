@@ -5,10 +5,9 @@ import './App.css';
 import {mainInteraction} from "./interaction";
 
 function App() {
-  // useEffect(() => {
-  //   mainInteraction();
-  // }, []);
-  mainInteraction();
+  useEffect(() => {
+    mainInteraction();
+  }, []);
 
   return (
       <></>
