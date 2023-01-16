@@ -1,17 +1,17 @@
-import { isMobile } from "react-device-detect";
+import {isMobile} from "react-device-detect";
 
 import * as THREE from 'three';
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import {DRACOLoader} from "three/examples/jsm/loaders/DRACOLoader";
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader";
 
 import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
 
 import * as dat from 'dat.gui';
 
-import { ShapeType, threeToCannon } from "three-to-cannon";
+import {ShapeType, threeToCannon} from "three-to-cannon";
 
 import about from './about.glb';
 import contact from './contact.glb';
@@ -21,6 +21,9 @@ import logo1 from './logo1.glb';
 import logo2 from './logo2.glb';
 import logo3 from './logo3.glb';
 import work from './work.glb';
+import gummybear from './gummybear.glb';
+import rainbow from './rainbow.glb';
+import swoosh from './swoosh.glb';
 
 import tvstudio from './tvstudio.hdr';
 
@@ -33,7 +36,7 @@ export const mainInteraction = () => {
     renderer.shadowMap.enabled = true;
 
     // gui
-    const gui = new dat.GUI();
+    // const gui = new dat.GUI();
     let parameters = {
         camera: isMobile ? 2 : 3.2,
         decay: isMobile ? 0.84 : 0.7,
@@ -44,13 +47,13 @@ export const mainInteraction = () => {
         // 조명
         ambientLight: 0.5,
         environmentLight: 1,
-        massAbout: 800,
-        massContact: 200,
-        massWork: 200,
+        massAbout: 1000,
+        massContact: 300,
+        massWork: 300,
     }
-    gui.add(parameters, 'massAbout').min(10).max(1000).step(1);
-    gui.add(parameters, 'massContact').min(10).max(1000).step(1);
-    gui.add(parameters, 'massWork').min(10).max(1000).step(1);
+    // gui.add(parameters, 'massAbout').min(10).max(1000).step(1);
+    // gui.add(parameters, 'massContact').min(10).max(1000).step(1);
+    // gui.add(parameters, 'massWork').min(10).max(1000).step(1);
 
     // init
     const scene = new THREE.Scene();
@@ -82,7 +85,6 @@ export const mainInteraction = () => {
 
     // 물리엔진
     const cannonWorld = new CANNON.World();
-    const cannonDebugger = new CannonDebugger(scene, cannonWorld);
 
     const defaultMaterial = new CANNON.Material('default');
     // 이 값이 최선인가?
@@ -102,8 +104,8 @@ export const mainInteraction = () => {
         // 로고 사이즈 정하기
         const logoScale = isMobile ? 24 : 32;
         gltf.scene.children[0].scale.set(logoScale, logoScale, logoScale);
-        const sphereBody = new CANNON.Sphere(0.001);
-        const body = new CANNON.Body({mass: 0, position: new CANNON.Vec3(0, 0,0 ), material: defaultMaterial});
+        const sphereBody = new CANNON.Sphere(0.00001);
+        const body = new CANNON.Body({mass: 0, position: new CANNON.Vec3(0, 0, 0), material: defaultMaterial});
         body.addShape(sphereBody);
         cannonWorld.addBody(body);
 
@@ -111,8 +113,10 @@ export const mainInteraction = () => {
         objects.center.mesh = gltf.scene.children[0];
         scene.add(gltf.scene.children[0]);
         objects.center.body = body;
-        objects.center.offset = new CANNON.Vec3(0, 0,0);
+        objects.center.offset = new CANNON.Vec3(0, 0, 0);
     });
+
+    const mobileExclude = ['logo3', 'eye7'];
 
     const models = [
         {name: 'contact', asset: contact},
@@ -121,32 +125,79 @@ export const mainInteraction = () => {
         {name: 'logo3', asset: logo3},
         {name: 'logo2', asset: logo2},
         {name: 'logo1', asset: logo1},
+        {name: 'gummybear', asset: gummybear},
+        {name: 'swoosh', asset: swoosh},
+        {name: 'rainbow', asset: rainbow},
     ]
     const modelLoaded = {};
     models.forEach(model => {
+        if (isMobile && mobileExclude.includes(model.name)) return;
         gltfLoader.load(model.asset, gltf => {
-            modelLoaded[model.name] = gltf.scene.children[0];
+            if (model.name !== 'swoosh') {
+                modelLoaded[model.name] = gltf.scene.children[0];
+            } else {
+                modelLoaded[model.name] = gltf.scene;
+            }
         });
     })
-    let eyeModel;
     gltfLoader.load(eye, gltf => {
         modelLoaded['eye'] = gltf.scene.children[0];
     });
 
     const sequence = [
-        {menuName: 'eye', scale: isMobile ? 4 : 10, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye2', scale: isMobile ? 6 : 16, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye3', scale: isMobile ? 8 : 40, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye4', scale: isMobile ? 10 : 6, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye5', scale: isMobile ? 12 : 20, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye6', scale: isMobile ? 13 : 26, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'eye7', scale: isMobile ? 11 : 40, floating: true, mass: isMobile ? 200 : 40, forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]},
-        {menuName: 'logo1', mass: 1, scale: isMobile ? 15 : 26, positionX: isMobile ? 0.1 : -2, positionY: isMobile ? -0.5 : -0.6, positionZ: isMobile ? -1.1 : -0.9},
-        {menuName: 'logo2', mass: 1, scale: isMobile ? 4 : 8, positionX: isMobile ? -0.2 : 1.6, positionY: isMobile ? -0.4 : -0.6, positionZ: isMobile ? 0 : -0.3},
-        {menuName: 'logo3', mass: 1, scale: isMobile ? 4 : 8, positionX: isMobile ? -0.1 : -1.8, positionY: isMobile ? -0.5 : -0.6, positionZ: isMobile ? 1 : 1},
-        {menuName: 'work', mass: parameters.massWork, scale: isMobile ? 9 : 28, positionX: isMobile ? 0 : 0.3, positionY: 0.4, positionZ: isMobile ? 0 : -0.5},
-        {menuName: 'about', mass: parameters.massAbout, scale: isMobile ? 6 : 16, positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? -0.7 : 1},
-        {menuName: 'contact', mass: parameters.massContact, scale: isMobile ? 5 : 12, positionX: isMobile ? 0.1 : 1.5, positionY: 0, positionZ: isMobile ? 0.8 : 1.2},
+        {
+            menuName: 'swoosh', scale: isMobile ? 1.5 : 3, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)],
+        },
+        {
+            menuName: 'eye2', scale: isMobile ? 11 : 18, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]
+        },
+        {
+            menuName: 'gummybear', scale: isMobile ? 0.022 : 0.04, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]
+        },
+        {
+            menuName: 'rainbow', scale: isMobile ? 0.008 : 0.02, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]
+        },
+        {
+            menuName: 'eye5', scale: isMobile ? 9 : 24, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]
+        },
+        {
+            menuName: 'eye7', scale: isMobile ? 7 : 40, floating: true, mass: isMobile ? 200 : 40,
+            forces: [new CANNON.Vec3(Math.random() - 0.5,Math.random() - 0.5,Math.random() - 0.5).scale(1000)]
+        },
+        {
+            menuName: 'logo1', mass: 100, scale: isMobile ? 9.5 : 26, positionX: isMobile ? 0.1 : -2,
+            positionY: isMobile ? -0.25 : -0.6, positionZ: isMobile ? 0.5 : -0.9,
+            rotation: isMobile ? {axis: new CANNON.Vec3(0, 1, 0), angle: -Math.PI / 7} : null
+        },
+        {
+            menuName: 'logo2', mass: 100, scale: isMobile ? 5 : 8, positionX: isMobile ? 0 : 1.6,
+            positionY: isMobile ? -0.45 : -0.6, positionZ: isMobile ? -0.1 : -0.3,
+            rotation: isMobile ? {axis: new CANNON.Vec3(0, 1, 0), angle: -Math.PI / 3} : null
+        },
+        {
+            menuName: 'logo3', mass: 100, scale: isMobile ? 6 : 8, positionX: isMobile ? -0.1 : 0,
+            positionY: isMobile ? -0.5 : -0.6, positionZ: isMobile ? 1 : 1
+        },
+        {
+            menuName: 'work', mass: parameters.massWork, scale: isMobile ? 9 : 28,
+            positionX: isMobile ? 0.05 : 0.3, positionY: isMobile ? 0.2 : 0.4, positionZ: isMobile ? 0 : -0.5,
+            rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 6} : null
+        },
+        {
+            menuName: 'about', mass: parameters.massAbout, scale: isMobile ? 7 : 16,
+            positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? -0.7 : 1,
+            rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 7} : null
+        },
+        {
+            menuName: 'contact', mass: parameters.massContact, scale: isMobile ? 7 : 12,
+            positionX: isMobile ? 0 : 1.5, positionY: 0, positionZ: isMobile ? 0.8 : 1.2,
+            rotation: isMobile ? {axis: new CANNON.Vec3(   1, 1, 0), angle: Math.PI / 6} : null
+        },
     ];
 
     const clock = new THREE.Clock();
@@ -155,13 +206,13 @@ export const mainInteraction = () => {
     const yCap = isMobile ? 0.6 : 1;
     var planeYmin = new CANNON.Body({mass: 0, material: defaultContactMaterial});
     planeYmin.addShape(planeShape);
-    planeYmin.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-    planeYmin.position.set(0,-yCap,0);
+    planeYmin.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    planeYmin.position.set(0, -yCap, 0);
     cannonWorld.addBody(planeYmin);
     var planeYmax = new CANNON.Body({mass: 0, material: defaultContactMaterial});
     planeYmax.addShape(planeShape);
-    planeYmax.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),Math.PI/2);
-    planeYmax.position.set(0,yCap,0);
+    planeYmax.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+    planeYmax.position.set(0, yCap, 0);
     cannonWorld.addBody(planeYmax);
 
     let boundingBox = new THREE.Box3();
@@ -201,8 +252,6 @@ export const mainInteraction = () => {
                 }
             }
 
-            // floating일 때 스프링 붙이는 거 생략함
-            // TODO: 힘 넣어주기
             if (object.body) {
                 const randomTime = Math.random();
                 if (object.floating && randomTime > 0.8 && clock.elapsedTime >= object.forceExpire) {
@@ -242,12 +291,22 @@ export const mainInteraction = () => {
                 );
                 cannonWorld.addConstraint(object.constraint);
             }
+
+            if (isMobile && ['work', 'about', 'contact'].includes(name)) {
+                // body.applyTorque(new CANNON.Quaternion().inverse(body.quaternion));
+            } else if (['contact'].includes(name)) {
+                body.applyTorque(new CANNON.Quaternion().inverse(body.quaternion));
+            }
         }
     };
 
     let tempModel;
     const loadSequence = (sequence) => {
         const menuName = sequence[sequence.length - 1].menuName;
+        if (isMobile && mobileExclude.includes(menuName)) {
+            sequence.pop();
+            return;
+        }
         if (modelLoaded.hasOwnProperty(menuName)) {
             tempModel = modelLoaded[menuName];
         } else if (menuName.includes('eye') && modelLoaded.hasOwnProperty('eye')) {
@@ -257,13 +316,18 @@ export const mainInteraction = () => {
         }
         const toLoad = sequence.pop();
         tempModel.scale.set(toLoad.scale, toLoad.scale, toLoad.scale);
-        const { shape, offset, quaternion } = threeToCannon(tempModel, {type: ShapeType.BOX});
+        const {shape, offset, quaternion} = threeToCannon(tempModel, {type: ShapeType.BOX});
         const body = new CANNON.Body({
             mass: toLoad.mass,
             position: new CANNON.Vec3(-offset.x, -offset.y, -offset.z),
             material: defaultMaterial
         });
         body.addShape(shape, offset, quaternion);
+        if (toLoad.rotation) {
+            console.log(toLoad.rotation);
+            body.quaternion.setFromAxisAngle(toLoad.rotation.axis, toLoad.rotation.angle);
+        }
+
         cannonWorld.addBody(body);
 
         objects[toLoad.menuName] = {};
@@ -293,17 +357,6 @@ export const mainInteraction = () => {
         updatePhysics(scene, objects);
         clicked && sceneLoaded && sequence.length > 0 && loadSequence(sequence);
 
-        ambientLight.intensity = parameters.ambientLight;
-        renderer.toneMappingExposure = parameters.environmentLight;
-        camera.position.y = parameters.camera;
-        if (objects.about) {
-            console.log(objects.about.body.mass);
-        }
-        if (objects.about) objects.about.body.mass = parameters.massAbout;
-        if (objects.contact) objects.contact.body.mass = parameters.massContact;
-        if (objects.work) objects.work.body.mass = parameters.massWork;
-
-        cannonDebugger.update();
         renderer.render(scene, camera);
         renderer.setAnimationLoop(draw);
     }
