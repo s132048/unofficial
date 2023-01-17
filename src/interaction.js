@@ -186,17 +186,17 @@ export const mainInteraction = () => {
         {
             menuName: 'work', mass: parameters.massWork, scale: isMobile ? 9 : 28,
             positionX: isMobile ? 0.05 : 0.3, positionY: isMobile ? 0.2 : 0.4, positionZ: isMobile ? 0 : -0.5,
-            rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 6} : null
+            // rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 6} : null
         },
         {
             menuName: 'about', mass: parameters.massAbout, scale: isMobile ? 7 : 16,
             positionX: isMobile ? 0 : -1.4, positionY: 0, positionZ: isMobile ? -0.7 : 1,
-            rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 7} : null
+            // rotation: isMobile ? {axis: new CANNON.Vec3(1, 0, 0), angle: -Math.PI / 7} : null
         },
         {
             menuName: 'contact', mass: parameters.massContact, scale: isMobile ? 7 : 12,
             positionX: isMobile ? 0 : 1.5, positionY: 0, positionZ: isMobile ? 0.8 : 1.2,
-            rotation: isMobile ? {axis: new CANNON.Vec3(   1, 1, 0), angle: Math.PI / 6} : null
+            // rotation: isMobile ? {axis: new CANNON.Vec3(   -1, 1, 0), angle: -Math.PI / 6} : null
         },
     ];
 
@@ -217,6 +217,7 @@ export const mainInteraction = () => {
 
     let boundingBox = new THREE.Box3();
     let positionTemp = new THREE.Vector3();
+    let testTorque
     const cap = 1;
     const updatePhysics = (scene, objects) => {
         const decay = parameters.decay;
@@ -293,6 +294,29 @@ export const mainInteraction = () => {
             }
 
             if (isMobile && ['work', 'about', 'contact'].includes(name)) {
+                if (name === 'work') {
+                    testTorque = new CANNON.Quaternion().inverse(body.quaternion);
+                    testTorque.x -= 0.3
+                    testTorque.y -= 0.1
+                    testTorque.z -= 0.1
+                    testTorque.normalize()
+                    body.applyTorque(testTorque);
+                } else if (name === 'about') {
+                    testTorque = new CANNON.Quaternion().inverse(body.quaternion);
+                    // testTorque.x -= 0.2
+                    // testTorque.y -= 0.2
+                    testTorque.z -= 0.2
+                    testTorque.normalize()
+                    body.applyTorque(testTorque);
+                }  else if (name === 'contact') {
+                    testTorque = new CANNON.Quaternion().inverse(body.quaternion);
+                    testTorque.x -= 0.3;
+                    testTorque.y += 0.1;
+                    testTorque.z -= 0.2
+                    testTorque.normalize();
+                    body.applyTorque(testTorque);
+                }
+
                 // body.applyTorque(new CANNON.Quaternion().inverse(body.quaternion));
             } else if (['contact'].includes(name)) {
                 body.applyTorque(new CANNON.Quaternion().inverse(body.quaternion));
@@ -324,7 +348,6 @@ export const mainInteraction = () => {
         });
         body.addShape(shape, offset, quaternion);
         if (toLoad.rotation) {
-            console.log(toLoad.rotation);
             body.quaternion.setFromAxisAngle(toLoad.rotation.axis, toLoad.rotation.angle);
         }
 
